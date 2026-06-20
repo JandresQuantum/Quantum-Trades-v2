@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quantum Trades Edge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #010a0f;
+            --card-bg: rgba(4, 18, 26, 0.85);
+            --cyan-neon: #00f0ff;
+            --orange-neon: #ff9900;
+            --green-profit: #00ff66;
+            --red-loss: #ff2a2a;
+            --text-color: #e2f1f8;
+            --border-glow: 0 0 8px rgba(0, 240, 255, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Share Tech Mono', monospace;
+            padding-bottom: 80px;
+            overflow-x: hidden;
+        }
+
+        /* HEADER */
+        .cyber-header {
+            background: linear-gradient(180deg, #021622 0%, var(--bg-color) 100%);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 15px 12px;
+            text-align: center;
+        }
+
+        .system-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--cyan-neon);
+            margin-bottom: 6px;
+            text-shadow: var(--border-glow);
+        }
+
+        .system-status .right { color: var(--green-profit); }
+
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--orange-neon);
+            font-size: 22px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 153, 0, 0.6);
+            margin-bottom: 2px;
+        }
+
+        .author-tag {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #8ab4f8;
+            text-transform: uppercase;
+        }
+
+        /* CONTAINER GENERAL */
+        .container {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* TARJETAS CYBER */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: var(--border-glow);
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 4px;
+            background: var(--cyan-neon);
+        }
+
+        .card-title {
+            font-size: 11px;
+            color: rgba(226, 241, 248, 0.6);
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        /* BALANCE */
+        .balance-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance-amount {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
+            color: var(--text-color);
+            text-shadow: 0 0 8px rgba(226, 241, 248, 0.3);
+        }
+
+        .live-equity {
+            font-size: 11px;
+            color: var(--green-profit);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .live-equity::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--green-profit);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--green-profit);
+        }
+
+        /* GRID ESTADÍSTICAS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-val { font-size: 20px; font-weight: bold; }
+        .txt-profit { color: var(--green-profit); text-shadow: 0 0 5px rgba(0,255,102,0.2); }
+        .txt-loss { color: var(--red-loss); text-shadow: 0 0 5px rgba(255,42,42,0.2); }
+        .txt-cyan { color: var(--cyan-neon); text-shadow: 0 0 5px rgba(0,240,255,0.2); }
+
+        /* CALENDARIO FTMO */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .day-header { font-size: 10px; color: rgba(226, 241, 248, 0.4); padding-bottom: 4px; }
+        .day-cell {
+            background: rgba(2, 16, 26, 0.6);
+            border: 1px solid rgba(0, 240, 255, 0.1);
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        .day-cell.profit { border-color: var(--green-profit); background: rgba(0, 255, 102, 0.04); color: var(--green-profit); }
+        .day-cell.loss { border-color: var(--red-loss); background: rgba(255, 42, 42, 0.04); color: var(--red-loss); }
+        .day-cell.current { border-color: var(--orange-neon); box-shadow: 0 0 4px var(--orange-neon); }
+
+        .calendar-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 11px;
+            border-top: 1px dashed rgba(0, 240, 255, 0.2);
+            padding-top: 8px;
+        }
+
+        /* FORMULARIO */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        select, input {
+            background: #020d14;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .direction-toggle, .result-toggle {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .result-toggle { grid-template-columns: repeat(3, 1fr); }
+
+        .dir-btn, .res-btn {
+            background: #020d14;
+            border: none;
+            color: rgba(226, 241, 248, 0.5);
+            padding: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .dir-btn.buy.active { background: rgba(0, 255, 102, 0.2); color: var(--green-profit); }
+        .dir-btn.sell.active { background: rgba(255, 42, 42, 0.2); color: var(--red-loss); }
+        .res-btn.win.active { background: rgba(0, 255, 102, 0.2); color: var(--green-profit); }
+        .res-btn.loss.active { background: rgba(255, 42, 42, 0.2); color: var(--red-loss); }
+        .res-btn.be.active { background: rgba(255, 153, 0, 0.2); color: var(--orange-neon); }
+
+        .submit-btn {
+            background: linear-gradient(90deg, rgba(255,153,0,0.1) 0%, rgba(255,153,0,0.2) 100%);
+            border: 1px solid var(--orange-neon);
+            color: var(--orange-neon);
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        /* NAVEGACIÓN FIJA INFERIOR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 60px;
+            background: #020e14;
+            border-top: 1px solid var(--cyan-neon);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(226, 241, 248, 0.4);
+            text-decoration: none;
+            font-size: 9px;
+            gap: 3px;
+        }
+
+        .nav-item.active { color: var(--cyan-neon); text-shadow: var(--border-glow); }
+        .nav-icon { font-size: 18px; }
+
+        /* MANEJO DE VISTAS */
+        .view { display: none; }
+        .view.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <header class="cyber-header">
+        <div class="system-status">
+            <span>LATENCY: 12ms</span>
+            <span class="right">AI STATUS: ACTIVE</span>
+        </div>
+        <h1 class="main-title">QUANTUM TRADES EDGE</h1>
+        <div class="author-tag">BY JANDRESCALPER — ORB STRATEGY</div>
+    </header>
+
+    <main class="container">
+        
+        <div id="view-dashboard" class="view active">
+            <section class="card">
+                <div class="card-title">ACCOUNT BALANCE</div>
+                <div class="balance-box">
+                    <div class="balance-amount" id="lbl-balance">$10,106.65</div>
+                    <div class="live-equity">LIVE EQUITY</div>
+                </div>
+            </section>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="card-title">WIN RATE</div>
+                    <div class="stat-val txt-cyan" id="lbl-winrate">75.0%</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">P&L TOTAL</div>
+                    <div class="stat-val txt-profit" id="lbl-pltotal">+$106.65</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">AVG X TRADE</div>
+                    <div class="stat-val txt-cyan">+$13.33</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">PROFIT FACTOR</div>
+                    <div class="stat-val txt-profit">3.42</div>
+                </div>
+            </div>
+
+            <section class="card" style="margin-top: 4px;">
+                <div class="card-title">CURVA DE EQUITY</div>
+                <div style="height: 150px; position: relative;">
+                    <canvas id="equityChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card" style="margin-top: 4px;">
+                <div class="card-title">(CALENDARIO OPERATIVO ESTILO FTMO)</div>
+                <div class="calendar-grid">
+                    <div class="day-header">LUN</div><div class="day-header">MAR</div><div class="day-header">MIÉ</div><div class="day-header">JUE</div><div class="day-header">VIE</div><div class="day-header">SÁB</div><div class="day-header">DOM</div>
+                    <div class="day-cell">-</div><div class="day-cell">-</div><div class="day-cell profit">3<br>+$52</div><div class="day-cell loss">4<br>-$13</div><div class="day-cell profit">5<br>+$26</div><div class="day-cell">-</div><div class="day-cell">-</div>
+                    <div class="day-cell profit">8<br>+$18</div><div class="day-cell loss">9<br>-$8</div><div class="day-cell profit">10<br>+$30</div><div class="day-cell profit">11<br>+$12</div><div class="day-cell">-</div><div class="day-cell">-</div><div class="day-cell">-</div>
+                    <div class="day-cell profit">15<br>+$9</div><div class="day-cell loss">16<br>-$15</div><div class="day-cell profit">17<br>+$21</div><div class="day-cell profit">18<br>+$14</div><div class="day-cell current profit">19<br>+$4</div><div class="day-cell">-</div><div class="day-cell">-</div>
+                </div>
+                <div class="calendar-summary">
+                    <div>GANADO: <span class="txt-profit">+$166.02</span></div>
+                    <div>PERDIDO: <span class="txt-loss">-$36.73</span></div>
+                    <div>NETO: <span class="txt-profit">+$129.29</span></div>
+                </div>
+            </section>
+        </div>
+
+        <div id="view-newtrade" class="view">
+            <section class="card">
+                <div class="card-title">NUEVO TRADE</div>
+                <form id="tradeForm" onsubmit="event.preventDefault(); saveTrade();">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>INSTRUMENTO</label>
+                            <select id="inp-instrument">
+                                <option value="US30.cash">US30.cash</option>
+                                <option value="NAS100">NAS100</option>
+                                <option value="XAUUSD">XAUUSD</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>DIRECCIÓN</label>
+                            <div class="direction-toggle">
+                                <button type="button" class="dir-btn buy active" onclick="setDirection('BUY')">BUY</button>
+                                <button type="button" class="dir-btn sell" onclick="setDirection('SELL')">SELL</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>LOTES</label>
+                            <input type="number" id="inp-lot" value="1.0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>SETUP</label>
+                            <select id="inp-setup">
+                                <option value="Silver Bullet">Silver Bullet</option>
+                                <option value="ORB">ORB Strategy</option>
+                                <option value="ICT FVG">ICT FVG</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>RESULTADO</label>
+                        <div class="result-toggle">
+                            <button type="button" class="res-btn win active" onclick="setResult('WIN')">WIN</button>
+                            <button type="button" class="res-btn loss" onclick="setResult('LOSS')">LOSS</button>
+                            <button type="button" class="res-btn be" onclick="setResult('BE')">BE</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>BENEFICIO / P&L ($)</label>
+                        <input type="number" id="inp-pnl" value="20.00" step="0.01">
+                    </div>
+
+                    <div class="form-group">
+                        <label>NOTAS / CONTEXTO ICT</label>
+                        <input type="text" id="inp-notes" placeholder="Ej: FVG en H1 tras barrido de liquidez...">
+                    </div>
+
+                    <button type="submit" class="submit-btn">GUARDAR TRADE</button>
+                </form>
+            </section>
+        </div>
+
+        <div id="view-history" class="view"><section class="card"><div class="card-title">HISTORIAL</div><p>Historial completo próximamente.</p></section></div>
+        <div id="view-stats" class="view"><section class="card"><div class="card-title">ESTADÍSTICAS</div><p>Métricas avanzadas de rendimiento.</p></section></div>
+        <div id="view-config" class="view"><section class="card"><div class="card-title">CONFIGURACIÓN</div><p>Ajustes del sistema.</p></section></div>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="javascript:void(0)" class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">
+            <span class="nav-icon">📊</span><span>DASHBOARD</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-history" onclick="switchView('history')">
+            <span class="nav-icon">📋</span><span>HISTORIAL</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-newtrade" onclick="switchView('newtrade')">
+            <span class="nav-icon">➕</span><span>NUEVO TRADE</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-stats" onclick="switchView('stats')">
+            <span class="nav-icon">📈</span><span>ESTADÍSTICAS</span>
+        </a>
+        <a href="javascript:void(0)" class="nav-item" id="nav-config" onclick="switchView('config')">
+            <span class="nav-icon">⚙️</span><span>CONFIG</span>
+        </a>
+    </nav>
+
+    <script>
+        let currentDirection = 'BUY';
+        let currentResult = 'WIN';
+        let tradesData = [10000, 10050, 10150, 9950, 10080, 9850, 10050, 10106.65];
+        let labelsData = ['12/06', '13/06', '14/06', '15/06', '16/06', '17/06', '18/06', '19/06'];
+        let chart;
+
+        window.onload = function() {
+            const ctx = document.getElementById('equityChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labelsData,
+                    datasets: [{
+                        data: tradesData,
+                        borderColor: '#00ff66',
+                        backgroundColor: 'rgba(0, 255, 102, 0.03)',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        pointBackgroundColor: '#00f0ff',
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(0, 240, 255, 0.05)' }, ticks: { color: 'rgba(226,241,248,0.5)', font: { size: 9 } } },
+                        x: { grid: { color: 'rgba(0, 240, 255, 0.05)' }, ticks: { color: 'rgba(226,241,248,0.5)', font: { size: 9 } } }
+                    }
+                }
+            });
+        };
+
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active');
+            document.getElementById('nav-' + viewName).classList.add('active');
+        }
+
+        function setDirection(dir) {
+            currentDirection = dir;
+            document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setResult(res) {
+            currentResult = res;
+            document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const pnlInp = document.getElementById('inp-pnl');
+            let val = Math.abs(parseFloat(pnlInp.value) || 0);
+            if (res === 'LOSS') pnlInp.value = (val * -1).toFixed(2);
+            else if (res === 'BE') pnlInp.value = "0.00";
+            else pnlInp.value = val.toFixed(2);
+        }
+
+        function saveTrade() {
+            const pnl = parseFloat(document.getElementById('inp-pnl').value) || 0;
+            let currentBalance = parseFloat(document.getElementById('lbl-balance').innerText.replace('$', '').replace(',', ''));
+            let newBalance = currentBalance + pnl;
+            
+            document.getElementById('lbl-balance').innerText = '$' + newBalance.toLocaleString('en-US', {minimumFractionDigits: 2});
+            
+            let today = new Date();
+            let dateStr = today.getDate() + '/' + (today.getMonth() + 1).toString().padStart(2, '0');
+            
+            labelsData.push(dateStr);
+            tradesData.push(newBalance);
+            chart.update();
+            
+            switchView('dashboard');
+            document.getElementById('inp-notes').value = '';
+        }
+    </script>
+</body>
+</html>
